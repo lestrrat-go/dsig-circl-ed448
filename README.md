@@ -10,50 +10,10 @@ Go's standard library does not include Ed448 support. The only viable implementa
 
 Import this package for its side effects to register Ed448 with `jwx`:
 
+<!-- INCLUDE(example_test.go) -->
 ```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/cloudflare/circl/sign/ed448"
-	"github.com/lestrrat-go/jwx/v3/jwa"
-	"github.com/lestrrat-go/jwx/v3/jwk"
-	"github.com/lestrrat-go/jwx/v3/jws"
-
-	_ "github.com/lestrrat-go/jwx-circl-ed448" // register Ed448
-)
-
-func main() {
-	pub, priv, err := ed448.GenerateKey(nil)
-	if err != nil {
-		fmt.Printf("failed to generate key: %s\n", err)
-		return
-	}
-
-	// Sign and verify with raw keys
-	signed, err := jws.Sign([]byte("hello"), jws.WithKey(jwa.EdDSAEd448(), priv))
-	if err != nil {
-		fmt.Printf("failed to sign: %s\n", err)
-		return
-	}
-
-	payload, err := jws.Verify(signed, jws.WithKey(jwa.EdDSAEd448(), pub))
-	if err != nil {
-		fmt.Printf("failed to verify: %s\n", err)
-		return
-	}
-	fmt.Printf("%s\n", payload)
-
-	// Import into JWK
-	jwkKey, err := jwk.Import(priv)
-	if err != nil {
-		fmt.Printf("failed to import key: %s\n", err)
-		return
-	}
-	_ = jwkKey
-}
 ```
+<!-- END INCLUDE -->
 
 # What gets registered
 
