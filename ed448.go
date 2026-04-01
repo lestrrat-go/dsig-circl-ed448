@@ -33,16 +33,13 @@ func init() {
 	// Register Ed448 as valid algorithm for OKP key type
 	jws.RegisterAlgorithmForKeyType(jwa.OKP(), jwa.EdDSAEd448())
 
-	// Register JWK OKP curve builders for Ed448
-	jwk.RegisterOKPCurveBuilder(jwa.Ed448(), jwk.OKPCurveBuilder{
-		BuildPublicKey:  buildEd448PublicKey,
-		BuildPrivateKey: buildEd448PrivateKey,
-	})
+	// Register JWK exporter for OKP:Ed448 keys (JWK → raw ed448 key)
+	jwk.RegisterKeyExporter(jwk.KeyKind("OKP:Ed448"), jwk.KeyExportFunc(exportEd448Key))
 
 	// Register raw key importer for Ed448 keys
 	jwk.RegisterOKPRawKeyImporter(importEd448RawKey)
 
-	// Register jwk.Import handlers for Ed448 key types
+	// Register jwk.Import handlers for Ed448 key types (raw ed448 key → JWK)
 	f := jwk.KeyImportFunc(importOKPEd448Key)
 	jwk.RegisterKeyImporter(ed448.PublicKey(nil), f)
 	jwk.RegisterKeyImporter(ed448.PrivateKey(nil), f)
@@ -126,25 +123,40 @@ func ed448PublicKey(dst *ed448.PublicKey, src any) error {
 	return nil
 }
 
-// --- JWK OKP key building ---
+// --- JWK key export (JWK → raw ed448 key) ---
 
-func buildEd448PublicKey(xbuf []byte) (any, error) {
-	if len(xbuf) != ed448.PublicKeySize {
-		return nil, fmt.Errorf(`ed448: wrong public key size %d (expected %d)`, len(xbuf), ed448.PublicKeySize)
+func exportEd448Key(key jwk.Key, _ any) (any, error) {
+	switch key := key.(type) {
+	case jwk.OKPPrivateKey:
+		x, ok := key.X()
+		if !ok {
+			return nil, fmt.Errorf(`missing "x" field`)
+		}
+		d, ok := key.D()
+		if !ok {
+			return nil, fmt.Errorf(`missing "d" field`)
+		}
+		if len(d) != ed448.SeedSize {
+			return nil, fmt.Errorf(`ed448: wrong private key seed size %d (expected %d)`, len(d), ed448.SeedSize)
+		}
+		ret := ed448.NewKeyFromSeed(d)
+		pub := ret.Public().(ed448.PublicKey) //nolint:forcetypeassert
+		if !bytes.Equal(x, pub) {
+			return nil, fmt.Errorf(`ed448: invalid x value given d value`)
+		}
+		return ret, nil
+	case jwk.OKPPublicKey:
+		x, ok := key.X()
+		if !ok {
+			return nil, fmt.Errorf(`missing "x" field`)
+		}
+		if len(x) != ed448.PublicKeySize {
+			return nil, fmt.Errorf(`ed448: wrong public key size %d (expected %d)`, len(x), ed448.PublicKeySize)
+		}
+		return ed448.PublicKey(x), nil
+	default:
+		return nil, jwk.ContinueError()
 	}
-	return ed448.PublicKey(xbuf), nil
-}
-
-func buildEd448PrivateKey(xbuf, dbuf []byte) (any, error) {
-	if len(dbuf) != ed448.SeedSize {
-		return nil, fmt.Errorf(`ed448: wrong private key seed size %d (expected %d)`, len(dbuf), ed448.SeedSize)
-	}
-	ret := ed448.NewKeyFromSeed(dbuf)
-	pub := ret.Public().(ed448.PublicKey) //nolint:forcetypeassert
-	if !bytes.Equal(xbuf, pub) {
-		return nil, fmt.Errorf(`ed448: invalid x value given d value`)
-	}
-	return ret, nil
 }
 
 // --- JWK raw key import ---

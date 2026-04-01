@@ -112,3 +112,4 @@ func TestEd448JWKRoundtrip(t *testing.T) {
 		require.Equal(t, priv.Seed(), exported.Seed())
 	})
 }
+
