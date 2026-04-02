@@ -51,7 +51,7 @@ func Example() {
   // signature verified
 }
 ```
-source: [example_test.go](https://github.com/lestrrat-go/dsig-circl-ed448/blob/main/example_test.go)
+source: [example_test.go](https://github.com/lestrrat-go/jwx-circl-ed448/blob/main/example_test.go)
 <!-- END INCLUDE -->
 
 # Installation
