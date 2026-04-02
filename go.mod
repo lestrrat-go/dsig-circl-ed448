@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cloudflare/circl v1.6.3
-	github.com/lestrrat-go/dsig v1.0.1-0.20260402074825-c0d43bb43299
+	github.com/lestrrat-go/dsig v1.1.0
 	github.com/stretchr/testify v1.11.1
 )
 
